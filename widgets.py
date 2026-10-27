@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QTimer
 from PyQt5.QtGui import QPainter, QFont, QColor
 
 class NavisionTitle(QWidget):
@@ -16,6 +16,30 @@ class NavisionTitle(QWidget):
 
         self.setMinimumHeight(50)
 
+        # Animation settings
+        self.max_zoom = 0.6 # the letters under the lens grows to 1.6x its size
+        self.lens_speed = 0.08 # how many letters the lens moves per tick
+        self.lens_pos = -1.0 # start just left of the first letter
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.move_lens)
+        self.timer.start(30) # ticke every 30 ms (~33 frames per second)
+
+    def move_lens(self):
+        self.lens_pos += self.lens_speed
+
+        # Past the last letter (plus a small pause) - jump back to the start
+        if self.lens_pos > len(self.word) + 1:
+            self.lens_pos = -1.0
+
+        self.update() # ask Qt to call paintEvent again
+
+    def letter_scale(self, index):
+        # 0 = lens right on the letter, 1 or more = lens is a full letter away
+        distance = abs(index - self.lens_pos)
+        strength = max(0.0, 1.0 - distance)
+        return 1.0 + self.max_zoom * strength
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.TextAntialiasing)
@@ -25,10 +49,20 @@ class NavisionTitle(QWidget):
         # Center the word horizontally
         total_width = self.letter_width * len(self.word)
         x = (self.width() - total_width) / 2
+        center_y = self.height() / 2
 
-        for letter in self.word:
-            cell = QRectF(x, 0, self.letter_width, self.height())
+        for index in range(len(self.word)):
+            letter = self.word[index]
+            scale = self.letter_scale(index)
+            center_x = x + self.letter_width / 2
+
+            painter.save()
+            painter.translate(center_x, center_y) # move the origin to the letter's center
+            painter.scale(scale, scale) # zoom around that center
+            cell = QRectF(-self.letter_width / 2, -self.height() / 2, self.letter_width, self.height())
             painter.drawText(cell, Qt.AlignCenter, letter)
+            painter.restore() # undo translate + scale for the next letter
+
             x += self.letter_width
 
         painter.end()
