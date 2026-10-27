@@ -21,3 +21,6 @@ desktop.ini
 
 # Logs and local scratch
 *.log
+
+# Private company images
+icons/

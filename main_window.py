@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayo
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from logic import resource_path
+from widgets import TopBar
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -29,6 +30,11 @@ class MainWindow(QMainWindow):
         body_layout = QHBoxLayout()
         body_layout.setContentsMargins(0, 0, 0, 0)
         body_layout.setSpacing(0)
+
+        self.top_bar = TopBar()
+
+        main_layout.addWidget(self.top_bar)
+        main_layout.addLayout(body_layout, 1)
 
 
 
