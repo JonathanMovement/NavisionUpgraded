@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit
+from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
+                             QLineEdit, QGridLayout)
 from PyQt5.QtCore import Qt, QRectF, QTimer, QSize
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap
 from logic import resource_path
@@ -190,4 +191,53 @@ class PlainTextEdit(QTextEdit):
         # Let QtextEdit draw the text on top
         super().paintEvent(event)
 
+class Calculator(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setFixedWidth(260)
+
+        self.text_box = QLineEdit()
+        self.text_box.setFont(QFont("Cascadia Code", 32))
+
+        self.grid = QGridLayout()
+
+        self.buttons = [
+            "7", "8", "9", "/",
+            "4", "5", "6", "x",
+            "1", "2", "3", "-",
+            "0", ".", "=", "+"
+        ]
+
+        # The FOR LOOP
+        row = 0
+        col = 0
+
+        for text in self.buttons:
+            button = QPushButton(text)
+            button.setStyleSheet("QPushButton {font: 25px Cascadia Code; padding: 10px;}")
+            self.grid.addWidget(button, row, col)
+            col += 1
+            if col > 3: # after 4 buttons, go back to column 0 on the next row
+                col = 0
+                row += 1
+
+        self.btn_clear = QPushButton("Clear")
+        self.btn_delete = QPushButton("<")
+        self.btn_clear.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
+        self.btn_delete.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(self.btn_clear)
+        button_row.addWidget(self.btn_delete)
+
+        master_layout = QVBoxLayout()
+        master_layout.setContentsMargins(10, 10, 10, 10)
+        master_layout.addWidget(self.text_box)
+        master_layout.addLayout(self.grid)
+        master_layout.addLayout(button_row)
+        master_layout.addStretch() # keeps the calculator at the top when the window gets taller
+        self.setLayout(master_layout)
 
