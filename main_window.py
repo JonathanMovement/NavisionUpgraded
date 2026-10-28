@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayo
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from logic import resource_path
-from widgets import TopBar
+from widgets import TopBar, SideBar
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -12,7 +12,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle("NavisionUpgraded")
-        self.resize(600, 500)
+        self.resize(700, 600)
         self.setMinimumSize(600, 500)
         self.setWindowIcon(QIcon(resource_path(os.path.join("icons", "KTNlogo.ico"))))
 
@@ -32,6 +32,10 @@ class MainWindow(QMainWindow):
         body_layout.setSpacing(0)
 
         self.top_bar = TopBar()
+        self.side_bar = SideBar()
+
+        body_layout.addWidget(self.side_bar)
+        body_layout.addStretch()
 
         main_layout.addWidget(self.top_bar)
         main_layout.addLayout(body_layout, 1)

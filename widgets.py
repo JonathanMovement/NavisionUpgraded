@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout
 from PyQt5.QtCore import Qt, QRectF, QTimer
 from PyQt5.QtGui import QPainter, QFont, QColor
 
@@ -74,7 +74,7 @@ class TopBar(QWidget):
 
     def initUI(self):
         self.setObjectName("TopBar")
-        self.setFixedHeight(60)
+        self.setFixedHeight(70)
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setStyleSheet("""
             #TopBar{
@@ -96,5 +96,43 @@ class TopBar(QWidget):
         layout.addSpacing(40) # same width as btn_expand, keeps the title truly centered.
         layout.addWidget(self.title, 1)
         layout.addWidget(self.btn_expand)
+
+class SideBar(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setFixedWidth(100)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+        self.setLayout(layout)
+
+        self.btn_filter_1 = QPushButton("|*")
+        self.btn_filter_2 = QPushButton("|")
+        self.btn_filter_3 = QPushButton("&&<>")
+        self.btn_remdupes = QPushButton("rem dupes")
+        self.btn_screenshot = QPushButton("OCR")
+        self.btn_clear = QPushButton("Clear")
+
+        # Hover hints
+        self.btn_filter_1.setToolTip("Filter by |*")
+        self.btn_filter_2.setToolTip("Filter by |")
+        self.btn_filter_3.setToolTip("Filter by &<>")
+        self.btn_remdupes.setToolTip("Remove duplicate values")
+        self.btn_screenshot.setToolTip("Screenshot -> Text")
+        self.btn_clear.setToolTip("Clear the text")
+
+        layout.addWidget(self.btn_filter_1)
+        layout.addWidget(self.btn_filter_2)
+        layout.addWidget(self.btn_filter_3)
+        layout.addWidget(self.btn_remdupes)
+        layout.addWidget(self.btn_screenshot)
+        layout.addStretch()
+        layout.addWidget(self.btn_clear)
+
+
 
 
