@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayo
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from logic import resource_path
-from widgets import TopBar, SideBar
+from widgets import TopBar, SideBar, PlainTextEdit
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -33,9 +33,10 @@ class MainWindow(QMainWindow):
 
         self.top_bar = TopBar()
         self.side_bar = SideBar()
+        self.text_area = PlainTextEdit()
 
         body_layout.addWidget(self.side_bar)
-        body_layout.addStretch()
+        body_layout.addWidget(self.text_area, 1)
 
         main_layout.addWidget(self.top_bar)
         main_layout.addLayout(body_layout, 1)

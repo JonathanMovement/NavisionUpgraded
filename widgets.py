@@ -1,6 +1,8 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout
-from PyQt5.QtCore import Qt, QRectF, QTimer
-from PyQt5.QtGui import QPainter, QFont, QColor
+from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit
+from PyQt5.QtCore import Qt, QRectF, QTimer, QSize
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap
+from logic import resource_path
+import os
 
 class NavisionTitle(QWidget):
     def __init__(self):
@@ -133,6 +135,59 @@ class SideBar(QWidget):
         layout.addStretch()
         layout.addWidget(self.btn_clear)
 
+class PlainTextEdit(QTextEdit):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
+    def initUI(self):
+        self.setPlaceholderText("Paste your text here ^-^")
+
+        text_font = QFont("Cascadia Code")
+        text_font.setPixelSize(15)
+        self.setFont(text_font)
+
+        # Background image
+        self.bg_original = QPixmap(resource_path(os.path.join("icons", "KatoenNatie.png")))
+        self.bg_scaled = None
+        self.bg_scaled_for = None # the size the cached copy was made for
+
+    def insertFromMimeData(self, source):
+        # Paste as plain text only (no formatting from Excel, web pages, etc.)
+        if source.hasText():
+            self.insertPlainText(source.text())
+        else:
+            super().insertFromMimeData(source)
+
+    def scaled_background(self):
+        # Real pixels = size on screen * monitor scaling (1.0, 1.25, 1.50...)
+        ratio = self.viewport().devicePixelRatioF()
+        target = QSize(int(self.viewport().width() * ratio), int(self.viewport().height() * ratio))
+
+        # Only rescale when the size or monitor scaling changed - not on every keystroke
+        if self.bg_scaled_for != target:
+            self.bg_scaled = self.bg_original.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.bg_scaled.setDevicePixelRatio(ratio)
+            self.bg_scaled_for = target
+
+        return self.bg_scaled
+
+    def paintEvent(self, event):
+        if not self.bg_original.isNull():
+            pixmap = self.scaled_background()
+
+            # Size of the picture on screen
+            ratio = pixmap.devicePixelRatio()
+            img_w = pixmap.width() / ratio
+            img_h = pixmap.height() / ratio
+            x = int((self.viewport().width() - img_w) / 2)
+            y = int((self.viewport().height() - img_h) / 2)
+
+            painter = QPainter(self.viewport())
+            painter.drawPixmap(x, y, pixmap)
+            painter.end()
+
+        # Let QtextEdit draw the text on top
+        super().paintEvent(event)
 
 
