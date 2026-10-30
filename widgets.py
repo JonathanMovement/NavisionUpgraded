@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
                              QLineEdit, QGridLayout)
 from PyQt5.QtCore import Qt, QRectF, QTimer, QSize
-from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon
 from logic import resource_path
 import os
 
@@ -92,7 +92,9 @@ class TopBar(QWidget):
 
         self.title = NavisionTitle()
 
-        self.btn_expand = QPushButton(">>")
+        self.btn_expand = QPushButton()
+        self.btn_expand.setIcon(QIcon(resource_path(os.path.join("icons", "expand.png"))))
+        self.btn_expand.setIconSize(QSize(30, 30))
         self.btn_expand.setFixedSize(40, 40)
         self.btn_expand.setToolTip("Expand window")
 
@@ -117,8 +119,12 @@ class SideBar(QWidget):
         self.btn_filter_2 = QPushButton("|")
         self.btn_filter_3 = QPushButton("&&<>")
         self.btn_remdupes = QPushButton("rem dupes")
-        self.btn_screenshot = QPushButton("OCR")
-        self.btn_clear = QPushButton("Clear")
+        self.btn_screenshot = QPushButton()
+        self.btn_screenshot.setIcon(QIcon(resource_path(os.path.join("icons", "image.png"))))
+        self.btn_screenshot.setIconSize(QSize(30, 30))
+        self.btn_clear = QPushButton()
+        self.btn_clear.setIcon(QIcon(resource_path(os.path.join("icons", "broom.png"))))
+        self.btn_clear.setIconSize(QSize(30, 30))
 
         # Hover hints
         self.btn_filter_1.setToolTip("Filter by |*")
@@ -226,7 +232,9 @@ class Calculator(QWidget):
                 row += 1
 
         self.btn_clear = QPushButton("Clear")
-        self.btn_delete = QPushButton("<")
+        self.btn_delete = QPushButton()
+        self.btn_delete.setIcon(QIcon(resource_path(os.path.join("icons", "delete.png"))))
+        self.btn_delete.setIconSize(QSize(25, 25))
         self.btn_clear.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
         self.btn_delete.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
 

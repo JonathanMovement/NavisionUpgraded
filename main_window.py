@@ -2,7 +2,7 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import Qt, QVariantAnimation, QEasingCurve, QAbstractAnimation
 from PyQt5.QtGui import QIcon
-from logic import resource_path
+from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates
 from widgets import TopBar, SideBar, PlainTextEdit, Calculator
 
 class MainWindow(QMainWindow):
@@ -56,6 +56,11 @@ class MainWindow(QMainWindow):
         self.expand_anim.valueChanged.connect(self.animation_step)
         self.expand_anim.finished.connect(self.animation_finished)
         self.top_bar.btn_expand.clicked.connect(self.toggle_calculator)
+        self.side_bar.btn_filter_1.clicked.connect(self.apply_filter_1)
+        self.side_bar.btn_filter_2.clicked.connect(self.apply_filter_2)
+        self.side_bar.btn_filter_3.clicked.connect(self.apply_filter_3)
+        self.side_bar.btn_remdupes.clicked.connect(self.apply_remove_duplicates)
+        self.side_bar.btn_clear.clicked.connect(self.clear_text)
 
     def toggle_calculator(self):
         # Ignore clicks while the window is still moving
@@ -89,13 +94,30 @@ class MainWindow(QMainWindow):
         if self.expanded:
             self.calculator.hide()
             self.expanded = False
-            self.top_bar.btn_expand.setText(">>")
             self.top_bar.btn_expand.setToolTip("Expand window")
         else:
             self.expanded = True
-            self.top_bar.btn_expand.setText("<<")
             self.top_bar.btn_expand.setToolTip("Shrink window")
             self.calculator.text_box.setFocus()
+
+    def apply_filter_1(self):
+        text = self.text_area.toPlainText()
+        self.text_area.setPlainText(filter_1(text))
+
+    def apply_filter_2(self):
+        text = self.text_area.toPlainText()
+        self.text_area.setPlainText(filter_2(text))
+
+    def apply_filter_3(self):
+        text = self.text_area.toPlainText()
+        self.text_area.setPlainText(filter_3(text))  
+
+    def apply_remove_duplicates(self):
+        text = self.text_area.toPlainText()
+        self.text_area.setPlainText(remove_duplicates(text))
+
+    def clear_text(self):
+        self.text_area.clear()      
 
 
 
