@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
                              QLineEdit, QGridLayout)
-from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QRegExp
-from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QRegExpValidator
+from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor
 from logic import resource_path
 import os
 
@@ -228,6 +228,12 @@ class Calculator(QWidget):
         self.text_box = QLineEdit()
         self.text_box.setFont(QFont("Cascadia Code", 32))
 
+        self.text_box.setReadOnly(True) # view and copy only - typing goes through the buttons
+        self.text_box.installEventFilter(self) # let the Calculator see the display's key presses first
+
+        self.operators = "+-x/"
+        self.button_map = {} # button text -> button, so a key press can find its button
+
         self.grid = QGridLayout()
 
         self.buttons = [
@@ -244,6 +250,9 @@ class Calculator(QWidget):
         for text in self.buttons:
             button = QPushButton(text)
             button.setStyleSheet("QPushButton {font: 25px Cascadia Code; padding: 10px;}")
+            button.setFocusPolicy(Qt.NoFocus) # keep the cursor in the display
+            button.clicked.connect(self.button_click)
+            self.button_map[text] = button
             self.grid.addWidget(button, row, col)
             col += 1
             if col > 3: # after 4 buttons, go back to column 0 on the next row
@@ -256,6 +265,17 @@ class Calculator(QWidget):
         self.btn_delete.setIconSize(QSize(25, 25))
         self.btn_clear.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
         self.btn_delete.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
+        self.btn_clear.setFocusPolicy(Qt.NoFocus)
+        self.btn_delete.setFocusPolicy(Qt.NoFocus)
+        self.btn_clear.clicked.connect(self.button_click)
+        self.btn_delete.clicked.connect(self.button_click)
+        self.button_map["Clear"] = self.btn_clear
+        self.button_map["<"] = self.btn_delete
+
+        # Short "pressed" flash when a button is triggered from the keyboard
+        self.flash_timer = QTimer(self)
+        self.flash_timer.setSingleShot(True)
+        self.flash_timer.timeout.connect(self.release_buttons)
 
         button_row = QHBoxLayout()
         button_row.addWidget(self.btn_clear)
@@ -276,4 +296,118 @@ class Calculator(QWidget):
         # Keep the inner pannel as tall as the Calculator widget
         self.panel.resize(self.panel_width, self.height())
         super().resizeEvent(event)
+
+    def eventFilter(self, obj, event):
+        # Every event for the display passes through here before the display gets it
+        if obj == self.text_box and event.type() == QEvent.KeyPress:
+            key_text = self.key_to_button_text(event)
+
+            if key_text in self.button_map:
+                self.flash_button(self.button_map[key_text])
+                self.press(key_text)
+                return True # handled - the display never sees this key
+
+        return super().eventFilter(obj, event) # anything else (Ctrl+C, arrows...) works as normal
+
+    def key_to_button_text(self, event):
+        key_text = event.text()
+
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+            key_text = "="
+        elif event.key() == Qt.Key_Escape:
+            key_text = "Clear"
+        elif event.key() == Qt.Key_Backspace:
+            key_text = "<"
+        elif key_text == "*" or key_text == "X":
+            key_text = "x"
+        elif key_text == ",": # decimal key
+            key_text = "."
+
+        return key_text
+
+    def flash_button(self, button):
+        self.release_buttons() # in case the previous flash is still showing
+        button.setDown(True)
+        self.flash_timer.start(100)
+
+    def release_buttons(self):
+        for button in self.button_map.values():
+            button.setDown(False)
+
+    def button_click(self):
+        button = self.sender() # which button was clicked
+
+        if button == self.btn_delete:
+            self.press("<")
+        else:
+            self.press(button.text())
+
+        self.text_box.setFocus() # clicking the calculator sends typing to the calculator
+
+    def current_number(self, expression):
+        # The number being typed right now = everything after the last operator
+        number = ""
+        for char in reversed(expression):
+            if char in self.operators:
+                break
+            number = char + number
+        return number
+
+    def press(self, text):
+        current_value = self.text_box.text()
+
+        # After and error, the next press starts fresh
+        if current_value == "Error":
+            current_value = ""
+
+        if text == "=":
+            symbol = current_value.replace("x", "*")
+            try:
+                res = eval(symbol)
+
+                # Fixing 0.3000000004 -> 0.3 and 3.0 -> 3
+                if isinstance(res, float):
+                    res = round(res, 10)
+                    if res.is_integer() and abs(res) < 1e15:
+                        res = int(res)
+
+                current_value = str(res)
+            except Exception as e:
+                print("Error:", e)
+                current_value = "Error"
+
+        elif text == "Clear":
+            current_value = ""
+
+        elif text == "<":
+            current_value = current_value[:-1]
+
+        elif text in self.operators:
+            # Fixing two operators in a row replacing each other, so (** = power)
+            if current_value == "":
+                if text == "-":
+                    current_value = "-" # a negative number can start with -
+            elif current_value[-1] in self.operators:
+                if current_value != "-":
+                    current_value = current_value[:-1] + text
+            else:
+                current_value += text
+
+        elif text == ".":
+            number = self.current_number(current_value)
+            if "." in number:
+                pass # a number can only have one decimal point
+            elif number == "":
+                current_value += "0." # "." on its own becomes "0."
+            else:
+                current_value += "."
+
+        else: # a digit
+            # Fixing 05 -> 5
+            if self.current_number(current_value) == "0":
+                current_value = current_value[:-1] + text
+            else:
+                current_value += text
+
+        self.text_box.setText(current_value)
 
