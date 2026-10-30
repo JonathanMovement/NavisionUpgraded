@@ -102,22 +102,22 @@ class MainWindow(QMainWindow):
 
     def apply_filter_1(self):
         text = self.text_area.toPlainText()
-        self.text_area.setPlainText(filter_1(text))
+        self.text_area.replace_all_text(filter_1(text))
 
     def apply_filter_2(self):
         text = self.text_area.toPlainText()
-        self.text_area.setPlainText(filter_2(text))
+        self.text_area.replace_all_text(filter_2(text))
 
     def apply_filter_3(self):
         text = self.text_area.toPlainText()
-        self.text_area.setPlainText(filter_3(text))  
+        self.text_area.replace_all_text(filter_3(text)) 
 
     def apply_remove_duplicates(self):
         text = self.text_area.toPlainText()
-        self.text_area.setPlainText(remove_duplicates(text))
+        self.text_area.replace_all_text(remove_duplicates(text))
 
     def clear_text(self):
-        self.text_area.clear()      
+        self.text_area.replace_all_text("")   
 
 
 

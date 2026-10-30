@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
                              QLineEdit, QGridLayout)
-from PyQt5.QtCore import Qt, QRectF, QTimer, QSize
-from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon
+from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QRegExp
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QRegExpValidator
 from logic import resource_path
 import os
 
@@ -134,6 +134,15 @@ class SideBar(QWidget):
         self.btn_screenshot.setToolTip("Screenshot -> Text")
         self.btn_clear.setToolTip("Clear the text")
 
+        # Clicking a side bar button must not steal focus from the text area,
+        # otherwise Ctrl+Z would go to the button instead of the text
+        self.btn_filter_1.setFocusPolicy(Qt.NoFocus)
+        self.btn_filter_2.setFocusPolicy(Qt.NoFocus)
+        self.btn_filter_3.setFocusPolicy(Qt.NoFocus)
+        self.btn_remdupes.setFocusPolicy(Qt.NoFocus)
+        self.btn_screenshot.setFocusPolicy(Qt.NoFocus)
+        self.btn_clear.setFocusPolicy(Qt.NoFocus)
+
         layout.addWidget(self.btn_filter_1)
         layout.addWidget(self.btn_filter_2)
         layout.addWidget(self.btn_filter_3)
@@ -165,6 +174,16 @@ class PlainTextEdit(QTextEdit):
             self.insertPlainText(source.text())
         else:
             super().insertFromMimeData(source)
+
+    def replace_all_text(self, new_text):
+        # Like setPlainText but recorded as one undo step, so Ctrl+Z brings back the old text
+        cursor = self.textCursor()
+        cursor.beginEditBlock()
+        cursor.select(QTextCursor.Document)
+        cursor.insertText(new_text)
+        cursor.endEditBlock()
+        self.setTextCursor(cursor)
+        self.setFocus() # Ctrl+Z goes here right away
 
     def scaled_background(self):
         # Real pixels = size on screen * monitor scaling (1.0, 1.25, 1.50...)
