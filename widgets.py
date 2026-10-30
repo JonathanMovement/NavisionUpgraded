@@ -197,7 +197,8 @@ class Calculator(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setFixedWidth(260)
+        self.panel_width = 260 # full width of the calculator when expanded
+        self.setFixedWidth(0) # starts closed - MainWindow animates this
 
         self.text_box = QLineEdit()
         self.text_box.setFont(QFont("Cascadia Code", 32))
@@ -239,5 +240,13 @@ class Calculator(QWidget):
         master_layout.addLayout(self.grid)
         master_layout.addLayout(button_row)
         master_layout.addStretch() # keeps the calculator at the top when the window gets taller
-        self.setLayout(master_layout)
+
+        self.panel = QWidget(self)
+        self.panel.setFixedWidth(self.panel_width)
+        self.panel.setLayout(master_layout)
+
+    def resizeEvent(self, event):
+        # Keep the inner pannel as tall as the Calculator widget
+        self.panel.resize(self.panel_width, self.height())
+        super().resizeEvent(event)
 
