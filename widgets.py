@@ -233,7 +233,7 @@ class SideBar(QWidget):
         self.btn_filter_1 = QPushButton("|*")
         self.btn_filter_2 = QPushButton("|")
         self.btn_filter_3 = QPushButton("&&<>")
-        self.btn_remdupes = QPushButton("rem dupes")
+        self.btn_remdupes = QPushButton("RemDupes")
         self.btn_screenshot = QPushButton()
         self.btn_screenshot.setIcon(QIcon(resource_path(os.path.join("icons", "image.png"))))
         self.btn_screenshot.setIconSize(QSize(30, 30))
