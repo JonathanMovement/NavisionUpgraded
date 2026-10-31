@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
                              QLineEdit, QGridLayout, QLabel)
 from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent, QElapsedTimer
-from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QImage
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QImage, QKeySequence
 from logic import resource_path
 import os
 import random
@@ -254,13 +254,19 @@ class SideBar(QWidget):
         self.btn_filter_3.setFixedHeight(38)
         self.btn_remdupes.setFixedHeight(38)
 
+        # Keyboard shortcuts
+        self.btn_filter_1.setShortcut(QKeySequence("Ctrl+E"))
+        self.btn_filter_2.setShortcut(QKeySequence("Ctrl+F"))
+        self.btn_remdupes.setShortcut(QKeySequence("Ctrl+R"))
+        self.btn_clear.setShortcut(QKeySequence("Ctrl+Q"))
+
         # Hover hints
-        self.btn_filter_1.setToolTip("Filter by |*")
-        self.btn_filter_2.setToolTip("Filter by |")
+        self.btn_filter_1.setToolTip("Filter by |* (Ctrl+E)")
+        self.btn_filter_2.setToolTip("Filter by | (Ctrl+F)")
         self.btn_filter_3.setToolTip("Filter by &<>")
-        self.btn_remdupes.setToolTip("Remove duplicate values")
+        self.btn_remdupes.setToolTip("Remove duplicate values (Ctrl+R)")
         self.btn_screenshot.setToolTip("Screenshot -> Text")
-        self.btn_clear.setToolTip("Clear the text")
+        self.btn_clear.setToolTip("Clear the text (Ctrl+Q)")
 
         # Clicking a side bar button must not steal focus from the text area,
         # otherwise Ctrl+Z would go to the button instead of the text

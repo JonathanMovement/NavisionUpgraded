@@ -4,7 +4,7 @@ CARBON_SHELL = "#1f2021"
 DARK_MATTER = "#020203"
 ANVIL = "#4a4c4f"
 PLATINUM_CORE = "#8d8f91"
-CRIMSON_VOID = "#42070d"
+CRIMSON_VOID = "#680916"
 CARBON_CRIMSON = "#c93847"
 DEEP_VELVET = "#271729"
 DARK_NEBULA = "#1a0a1c"
@@ -76,7 +76,7 @@ APP_STYLE = f"""
             border-color: #6b0f18;
         }}
         QPushButton[kind="danger"]:hover {{
-            background-color: #5c0a13;
+            background-color: {NIGHT_INK};
         }}
         QPushButton:pressed {{
             background-color: {CARBON_CRIMSON};
