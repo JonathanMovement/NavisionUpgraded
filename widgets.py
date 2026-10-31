@@ -5,6 +5,7 @@ from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QI
 from logic import resource_path
 import os
 import random
+from styles import DARK_MATTER, CONSOLE_BLUE, CARBON_CRIMSON, GLITCH_CYAN, FROST_WHITE
 
 # 5 x 7 pixel font - "X" = lit pixel. Only the letters NAVISION needs.
 PIXEL_FONT = {
@@ -79,11 +80,11 @@ class NavisionTitle(QWidget):
         self.slices = []        # (y, height, x_offset) bands while glitching
 
         # Colors
-        self.color_panel = QColor("#0b0d12")
-        self.color_dots = QColor("#171c26")
-        self.color_text = QColor("#f2f2f2")
-        self.color_red = QColor("#ff2a55")
-        self.color_cyan = QColor("#20e3ff")
+        self.color_panel = QColor(DARK_MATTER)
+        self.color_dots = QColor(CONSOLE_BLUE)
+        self.color_text = QColor(FROST_WHITE)
+        self.color_red = QColor(CARBON_CRIMSON)
+        self.color_cyan = QColor(GLITCH_CYAN)
 
         # Animation clock: positions come from real elapsed time.
         self.clock = QElapsedTimer()
@@ -222,12 +223,6 @@ class TopBar(QWidget):
         self.setObjectName("TopBar")
         self.setFixedHeight(70)
         self.setAttribute(Qt.WA_StyledBackground, True)
-        self.setStyleSheet("""
-            #TopBar{
-                background-color: #e3e3e3;
-                border-bottom: 1px solid #a6aba7;
-            }
-    """)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(10, 5, 10, 5)
@@ -270,6 +265,13 @@ class SideBar(QWidget):
         self.btn_clear = QPushButton()
         self.btn_clear.setIcon(QIcon(resource_path(os.path.join("icons", "broom.png"))))
         self.btn_clear.setIconSize(QSize(30, 30))
+        self.btn_clear.setProperty("kind", "danger") # dark red
+
+        # SideBar button height
+        self.btn_filter_1.setFixedHeight(38)
+        self.btn_filter_2.setFixedHeight(38)
+        self.btn_filter_3.setFixedHeight(38)
+        self.btn_remdupes.setFixedHeight(38)
 
         # Hover hints
         self.btn_filter_1.setToolTip("Filter by |*")
@@ -302,7 +304,10 @@ class PlainTextEdit(QTextEdit):
         self.initUI()
 
     def initUI(self):
-        self.setPlaceholderText("Paste your text here ^-^")
+        self.setObjectName("TextArea")
+        self.setPlaceholderText("Paste your text here ^-^\nCTRL+Z -> Undo\nCTRL+Y -> Redo\n\n" \
+        "WinOCR Limits:\nUnderscores and other symbols are not supported/read by WinOCR.\n" \
+        "It sometimes autocorrects letter 'l' to 1, always double check.")
 
         text_font = QFont("Cascadia Code")
         text_font.setPixelSize(15)
@@ -312,6 +317,7 @@ class PlainTextEdit(QTextEdit):
         self.bg_original = QPixmap(resource_path(os.path.join("icons", "KatoenNatie.png")))
         self.bg_scaled = None
         self.bg_scaled_for = None # the size the cached copy was made for
+        self.bg_opacity = 1.0
 
     def insertFromMimeData(self, source):
         # Paste as plain text only (no formatting from Excel, web pages, etc.)
@@ -355,6 +361,7 @@ class PlainTextEdit(QTextEdit):
             y = int((self.viewport().height() - img_h) / 2)
 
             painter = QPainter(self.viewport())
+            painter.setOpacity(self.bg_opacity)
             painter.drawPixmap(x, y, pixmap)
             painter.end()
 
@@ -371,6 +378,7 @@ class Calculator(QWidget):
         self.setFixedWidth(0) # starts closed - MainWindow animates this
 
         self.text_box = QLineEdit()
+        self.text_box.setObjectName("CalcDisplay")
         self.text_box.setFont(QFont("Cascadia Code", 32))
 
         self.text_box.setReadOnly(True) # view and copy only - typing goes through the buttons
@@ -394,7 +402,14 @@ class Calculator(QWidget):
 
         for text in self.buttons:
             button = QPushButton(text)
-            button.setStyleSheet("QPushButton {font: 25px Cascadia Code; padding: 10px;}")
+
+            if text == "=":
+                button.setProperty("kind", "equals")
+            elif text in self.operators:
+                button.setProperty("kind", "operator")
+            else:
+                button.setProperty("kind", "digit")
+
             button.setFocusPolicy(Qt.NoFocus) # keep the cursor in the display
             button.clicked.connect(self.button_click)
             self.button_map[text] = button
@@ -408,8 +423,8 @@ class Calculator(QWidget):
         self.btn_delete = QPushButton()
         self.btn_delete.setIcon(QIcon(resource_path(os.path.join("icons", "delete.png"))))
         self.btn_delete.setIconSize(QSize(25, 25))
-        self.btn_clear.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
-        self.btn_delete.setStyleSheet("QPushButton {font: 15px Cascadia Code; padding: 5px;}")
+        self.btn_clear.setProperty("kind", "danger")
+        self.btn_delete.setProperty("kind", "danger")
         self.btn_clear.setFocusPolicy(Qt.NoFocus)
         self.btn_delete.setFocusPolicy(Qt.NoFocus)
         self.btn_clear.clicked.connect(self.button_click)
@@ -434,6 +449,7 @@ class Calculator(QWidget):
         master_layout.addStretch() # keeps the calculator at the top when the window gets taller
 
         self.panel = QWidget(self)
+        self.panel.setObjectName("CalcPanel")
         self.panel.setFixedWidth(self.panel_width)
         self.panel.setLayout(master_layout)
 

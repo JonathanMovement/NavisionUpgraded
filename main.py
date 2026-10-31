@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from main_window import MainWindow
 from PyQt5.QtCore import Qt
+from styles import APP_STYLE
 
 def main():
     # Monitor scaling
@@ -9,6 +10,7 @@ def main():
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     
     app = QApplication(sys.argv)
+    app.setStyleSheet(APP_STYLE)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

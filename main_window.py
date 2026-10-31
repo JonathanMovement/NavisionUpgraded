@@ -4,6 +4,9 @@ from PyQt5.QtCore import Qt, QVariantAnimation, QEasingCurve, QAbstractAnimation
 from PyQt5.QtGui import QIcon, QImage, QPainter
 from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates, ocr_image, ocr_max_image_size
 from widgets import TopBar, SideBar, PlainTextEdit, Calculator
+import sys
+import ctypes
+from styles import OBSIDIAN, FROST_WHITE
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -15,6 +18,8 @@ class MainWindow(QMainWindow):
         self.resize(700, 500)
         self.setMinimumSize(700, 500)
         self.setWindowIcon(QIcon(resource_path(os.path.join("icons", "KTNlogo.ico"))))
+
+        self.dark_title_bar()
 
         # Central widget
         central_widget = QWidget()
@@ -157,6 +162,26 @@ class MainWindow(QMainWindow):
 
         QApplication.restoreOverrideCursor()
         self.text_area.replace_all_text(text) # undoable with Ctrl+Z
+
+    def dark_title_bar(self):
+        if sys.platform != "win32":
+            return
+
+        hwnd = int(self.winId()) # the window's Windows handle
+        dark_mode = ctypes.c_int(1)
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(dark_mode), ctypes.sizeof(dark_mode))
+
+        caption = ctypes.c_int(self.to_colorref(OBSIDIAN))
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(caption), ctypes.sizeof(caption))
+
+        title_text = ctypes.c_int(self.to_colorref(FROST_WHITE))
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 36, ctypes.byref(title_text), ctypes.sizeof(title_text))
+
+    def to_colorref(self, hex_color):
+        red = int(hex_color[1:3], 16)
+        green = int(hex_color[3:5], 16)
+        blue = int(hex_color[5:7], 16)
+        return (blue << 16) | (green << 8) | red
 
 
 
