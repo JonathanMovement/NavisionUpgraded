@@ -182,9 +182,3 @@ class MainWindow(QMainWindow):
         green = int(hex_color[3:5], 16)
         blue = int(hex_color[5:7], 16)
         return (blue << 16) | (green << 8) | red
-
-
-
-
-
-

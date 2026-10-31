@@ -5,7 +5,7 @@ from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QI
 from logic import resource_path
 import os
 import random
-from styles import DARK_MATTER, CONSOLE_BLUE, CARBON_CRIMSON, GLITCH_CYAN, FROST_WHITE
+from styles import CARBON_CRIMSON, GLITCH_CYAN, FROST_WHITE
 
 # 5 x 7 pixel font - "X" = lit pixel. Only the letters NAVISION needs.
 PIXEL_FONT = {
@@ -80,8 +80,6 @@ class NavisionTitle(QWidget):
         self.slices = []        # (y, height, x_offset) bands while glitching
 
         # Colors
-        self.color_panel = QColor(DARK_MATTER)
-        self.color_dots = QColor(CONSOLE_BLUE)
         self.color_text = QColor(FROST_WHITE)
         self.color_red = QColor(CARBON_CRIMSON)
         self.color_cyan = QColor(GLITCH_CYAN)
@@ -178,22 +176,6 @@ class NavisionTitle(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
 
-        # 1. Dark LED panel with a faint grid of unlit dots
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(self.color_panel)
-        painter.drawRoundedRect(QRectF(self.rect()), 8, 8)
-        painter.setRenderHint(QPainter.Antialiasing, False)
-
-        y = 2
-        while y < self.height() - 2:
-            x = 4
-            while x < self.width() -4:
-                painter.fillRect(x, y, self.block - 1, self.block - 1, self.color_dots)
-                x += self.block
-            y += self.block
-
-        # 2. RGB split: red copy to the left, cyan copy to the right, white on top
         glitching = len(self.slices) > 0
         split = 1
         if glitching:
@@ -205,13 +187,6 @@ class NavisionTitle(QWidget):
         painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
         self.draw_layer(painter, self.render_word(self.color_text), 0)
 
-        # 3. CRT scanline: a thin dark line every 3 pixels
-        scanline = QColor(0, 0, 0, 70)
-        y = 0
-        while y < self.height():
-            painter.fillRect(0, y, self.width(), 1, scanline)
-            y += 3
-        
         painter.end()
 
 class TopBar(QWidget):
@@ -306,7 +281,7 @@ class PlainTextEdit(QTextEdit):
     def initUI(self):
         self.setObjectName("TextArea")
         self.setPlaceholderText("Paste your text here ^-^\nCTRL+Z -> Undo\nCTRL+Y -> Redo\n\n" \
-        "WinOCR Limits:\nUnderscores and other symbols are not supported/read by WinOCR.\n" \
+        "WinOCR limits:\nUnderscores and other symbols are not supported/read by WinOCR.\n" \
         "It sometimes autocorrects letter 'l' to 1, always double check.")
 
         text_font = QFont("Cascadia Code")
