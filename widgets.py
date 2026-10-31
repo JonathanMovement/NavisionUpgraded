@@ -410,4 +410,3 @@ class Calculator(QWidget):
                 current_value += text
 
         self.text_box.setText(current_value)
-

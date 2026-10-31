@@ -1,8 +1,8 @@
 import os
-from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt, QVariantAnimation, QEasingCurve, QAbstractAnimation
-from PyQt5.QtGui import QIcon
-from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates
+from PyQt5.QtGui import QIcon, QImage
+from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates, ocr_image, ocr_max_image_size
 from widgets import TopBar, SideBar, PlainTextEdit, Calculator
 
 class MainWindow(QMainWindow):
@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         self.side_bar.btn_filter_3.clicked.connect(self.apply_filter_3)
         self.side_bar.btn_remdupes.clicked.connect(self.apply_remove_duplicates)
         self.side_bar.btn_clear.clicked.connect(self.clear_text)
+        self.side_bar.btn_screenshot.clicked.connect(self.read_clipboard)
 
     def toggle_calculator(self):
         # Ignore clicks while the window is still moving
@@ -118,6 +119,36 @@ class MainWindow(QMainWindow):
 
     def clear_text(self):
         self.text_area.replace_all_text("")   
+
+    def read_clipboard(self):
+        image = QApplication.clipboard().image()
+
+        if image.isNull():
+            QMessageBox.warning(self, "Clipboard empty",
+                                "No image in clipboard.\nTake a screenshot with Win + Shift + S first.")
+            return
+
+        QApplication.setOverrideCursor(Qt.WaitCursor) # spinning cursor while OCR runs
+        try:
+            # Small text is read better when it's bigger - double the size if it still fits
+            max_size = ocr_max_image_size()
+            if image.width() * 2 <= max_size and image.height() * 2 <= max_size:
+                image = image.scaled(image.width() * 2, image.height() * 2,
+                                     Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+            # Windows OCR wants raw pixels as R, G, B, A bytes
+            image = image.convertToFormat(QImage.Format_RGBA8888)
+            data = image.bits().asstring(image.sizeInBytes())
+
+            text = ocr_image(data, image.width(), image.height())
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(self, "Screenshot -> Text failed", str(e))
+            return
+
+        QApplication.restoreOverrideCursor()
+        self.text_area.replace_all_text(text) # undoable with Ctrl+Z
+
 
 
 
