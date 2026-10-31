@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
-                             QLineEdit, QGridLayout)
+                             QLineEdit, QGridLayout, QLabel)
 from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent, QElapsedTimer
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QImage
 from logic import resource_path
@@ -237,6 +237,12 @@ class SideBar(QWidget):
         self.btn_screenshot = QPushButton()
         self.btn_screenshot.setIcon(QIcon(resource_path(os.path.join("icons", "image.png"))))
         self.btn_screenshot.setIconSize(QSize(30, 30))
+        self.word_count = QLabel()
+        self.word_count.setAlignment(Qt.AlignCenter)
+        self.word_count.setStyleSheet("font-family: Cascadia Code;"
+                                      "font-size: 15px;")
+        self.word_count.setWordWrap(True)
+        self.word_count.hide()
         self.btn_clear = QPushButton()
         self.btn_clear.setIcon(QIcon(resource_path(os.path.join("icons", "broom.png"))))
         self.btn_clear.setIconSize(QSize(30, 30))
@@ -271,6 +277,7 @@ class SideBar(QWidget):
         layout.addWidget(self.btn_remdupes)
         layout.addWidget(self.btn_screenshot)
         layout.addStretch()
+        layout.addWidget(self.word_count)
         layout.addWidget(self.btn_clear)
 
 class PlainTextEdit(QTextEdit):
@@ -406,6 +413,13 @@ class Calculator(QWidget):
         self.btn_delete.clicked.connect(self.button_click)
         self.button_map["Clear"] = self.btn_clear
         self.button_map["<"] = self.btn_delete
+        self.slogan = QLabel("Our people make the difference.")
+        self.slogan.setStyleSheet("font-size: 12px;"
+                                  "font-family: Cascadia Code;"
+                                  "font-weight: bold;")
+        self.slogan.setAlignment(Qt.AlignCenter)
+        self.slogan.setWordWrap(True)
+        
 
         # Short "pressed" flash when a button is triggered from the keyboard
         self.flash_timer = QTimer(self)
@@ -421,6 +435,8 @@ class Calculator(QWidget):
         master_layout.addWidget(self.text_box)
         master_layout.addLayout(self.grid)
         master_layout.addLayout(button_row)
+        master_layout.addSpacing(14)
+        master_layout.addWidget(self.slogan)
         master_layout.addStretch() # keeps the calculator at the top when the window gets taller
 
         self.panel = QWidget(self)

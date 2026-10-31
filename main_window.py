@@ -67,6 +67,7 @@ class MainWindow(QMainWindow):
         self.side_bar.btn_remdupes.clicked.connect(self.apply_remove_duplicates)
         self.side_bar.btn_clear.clicked.connect(self.clear_text)
         self.side_bar.btn_screenshot.clicked.connect(self.read_clipboard)
+        self.text_area.textChanged.connect(self.word_count)
 
     def toggle_calculator(self):
         # Ignore clicks while the window is still moving
@@ -162,6 +163,23 @@ class MainWindow(QMainWindow):
 
         QApplication.restoreOverrideCursor()
         self.text_area.replace_all_text(text) # undoable with Ctrl+Z
+
+    def word_count(self):
+        # Words = anything separated by spaces, tabs, new lines or filters
+        text = self.text_area.toPlainText()
+        text = text.replace("&<>", " ") # filter 3 separator
+        text = text.replace("|", " ") # filter 1 and 2 separator
+        count = len(text.split())
+
+        if count == 0:
+            self.side_bar.word_count.hide()
+            return
+
+        if count == 1:
+            self.side_bar.word_count.setText("1 word")
+        else:
+            self.side_bar.word_count.setText(f"{count} words")
+        self.side_bar.word_count.show()
 
     def dark_title_bar(self):
         if sys.platform != "win32":
