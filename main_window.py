@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt, QVariantAnimation, QEasingCurve, QAbstractAnimation
-from PyQt5.QtGui import QIcon, QImage
+from PyQt5.QtGui import QIcon, QImage, QPainter
 from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates, ocr_image, ocr_max_image_size
 from widgets import TopBar, SideBar, PlainTextEdit, Calculator
 
@@ -130,11 +130,20 @@ class MainWindow(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.WaitCursor) # spinning cursor while OCR runs
         try:
-            # Small text is read better when it's bigger - double the size if it still fits
+            # Double the size if it still fits - small text is read better when it's bigger
+            margin = 20
             max_size = ocr_max_image_size()
-            if image.width() * 2 <= max_size and image.height() * 2 <= max_size:
+            if image.width() * 2 + margin * 2 <= max_size and image.height() * 2 + margin * 2 <= max_size:
                 image = image.scaled(image.width() * 2, image.height() * 2,
                                      Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+            # White margin around the picture
+            bordered = QImage(image.width() + margin * 2, image.height() + margin * 2, QImage.Format_RGBA8888)
+            bordered.fill(Qt.white)
+            painter = QPainter(bordered)
+            painter.drawImage(margin, margin, image)
+            painter.end()
+            image = bordered
 
             # Windows OCR wants raw pixels as R, G, B, A bytes
             image = image.convertToFormat(QImage.Format_RGBA8888)
