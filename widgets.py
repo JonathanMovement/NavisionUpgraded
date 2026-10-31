@@ -1,9 +1,56 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
                              QLineEdit, QGridLayout)
-from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent
-from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor
+from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent, QElapsedTimer
+from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QImage
 from logic import resource_path
 import os
+import random
+
+# 5 x 7 pixel font - "X" = lit pixel. Only the letters NAVISION needs.
+PIXEL_FONT = {
+    "N": ["X...X",
+          "XX..X",
+          "X.X.X",
+          "X..XX",
+          "X...X",
+          "X...X",
+          "X...X"],
+    "A": [".XXX.",
+          "X...X",
+          "X...X",
+          "XXXXX",
+          "X...X",
+          "X...X",
+          "X...X"],
+    "V": ["X...X",
+          "X...X",
+          "X...X",
+          "X...X",
+          "X...X",
+          ".X.X.",
+          "..X.."],
+    "I": [".XXX.",
+          "..X..",
+          "..X..",
+          "..X..",
+          "..X..",
+          "..X..",
+          ".XXX."],
+    "S": [".XXXX",
+          "X....",
+          "X....",
+          ".XXX.",
+          "....X",
+          "....X",
+          "XXXX."],
+    "O": [".XXX.",
+          "X...X",
+          "X...X",
+          "X...X",
+          "X...X",
+          "X...X",
+          ".XXX."],
+}
 
 class NavisionTitle(QWidget):
     def __init__(self):
@@ -12,62 +59,154 @@ class NavisionTitle(QWidget):
 
     def initUI(self):
         self.word = "NAVISION"
-        self.letter_width = 32 # every letter gets its own fixed-width "cell"
+        self.setMinimumHeight(56)
 
-        self.title_font = QFont("Consolas", 22)
-        self.title_font.setBold(True)
+        # Size of the pixel letters
+        self.block = 5      # one font pixel = 5x5 screen pixels
+        self.letter_gap = 2 # empty font pixels between letters
 
-        self.setMinimumHeight(50)
+        # Magnifying glass
+        self.max_zoom = 0.5   # the letter under the lens grows to 1.5x
+        self.lens_speed = 3.0 # letters per second
 
-        # Animation settings
-        self.max_zoom = 0.6 # the letters under the lens grows to 1.6x its size
-        self.lens_speed = 0.08 # how many letters the lens moves per tick
-        self.lens_pos = -1.0 # start just left of the first letter
+        # Glitch
+        self.glitch_until = 0.0 # time when the current glitch burst ends
+        self.next_glitch = 2.0  # time when the next glitch burst starts
+        self.slices = []        # (y, height, x_offset) bands while glitching
+
+        # Colors
+        self.color_panel = QColor("#0b0d12")
+        self.color_dots = QColor("#171c26")
+        self.color_text = QColor("#f2f2f2")
+        self.color_red = QColor("#ff2a55")
+        self.color_cyan = QColor("#20e3ff")
+
+        # Animation clock: positions come from real elapsed time.
+        self.clock = QElapsedTimer()
+        self.clock.start()
 
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.move_lens)
-        self.timer.start(30) # ticke every 30 ms (~33 frames per second)
+        self.timer.setTimerType(Qt.PreciseTimer)
+        self.timer.timeout.connect(self.tick)
+        self.timer.start(16) # ~60 frames per second
 
-    def move_lens(self):
-        self.lens_pos += self.lens_speed
+    def now(self):
+        return self.clock.elapsed() / 1000.0 # seconds since the app started
 
-        # Past the last letter (plus a small pause) - jump back to the start
-        if self.lens_pos > len(self.word) + 1:
-            self.lens_pos = -1.0
+    def tick(self):
+        t = self.now()
 
-        self.update() # ask Qt to call paintEvent again
+        # Time for a new glitch burst?
+        if t >= self.next_glitch:
+            self.glitch_until = t + random.uniform(0.12, 0.35)
+            self.next_glitch = t + random.uniform(2.0, 5.0)
+
+        # While glitching, cut the word into random horizontal bands every frame
+        self.slices = []
+        
+        if t < self.glitch_until:
+            y = 0
+            while y < self.height():
+                band = random.randint(4, 14)
+                offset = 0
+                if random.random() < 0.35:
+                    offset = random.randint(-7, 7)
+                self.slices.append((y, band, offset))
+                y += band
+
+        self.update()
+
+    def lens_position(self):
+        # Moves from -1 (left of the first letter) to len + 1 (right of the last), then repeats
+        travel = len(self.word) + 2
+        return (self.now() * self.lens_speed) % travel - 1
 
     def letter_scale(self, index):
-        # 0 = lens right on the letter, 1 or more = lens is a full letter away
-        distance = abs(index - self.lens_pos)
+        distance = abs(index - self.lens_position())
         strength = max(0.0, 1.0 - distance)
         return 1.0 + self.max_zoom * strength
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.TextAntialiasing)
-        painter.setFont(self.title_font)
-        painter.setPen(QColor("#333333"))
+    def render_word(self, color):
+        # Draws the whole word as pixel blocks into a transparent image
+        ratio = self.devicePixelRatioF()
+        image = QImage(int(self.width() * ratio), int(self.height() * ratio), QImage.Format_ARGB32_Premultiplied)
+        image.setDevicePixelRatio(ratio)
+        image.fill(Qt.transparent)
 
-        # Center the word horizontally
-        total_width = self.letter_width * len(self.word)
-        x = (self.width() - total_width) / 2
+        painter = QPainter(image)
+        cell = (5 + self.letter_gap) * self.block # width of one letter + gap
+        total_width = cell * len(self.word) - self.letter_gap * self.block
+        start_x = (self.width() - total_width) / 2
         center_y = self.height() / 2
 
         for index in range(len(self.word)):
-            letter = self.word[index]
-            scale = self.letter_scale(index)
-            center_x = x + self.letter_width / 2
+            rows = PIXEL_FONT[self.word[index]]
+            size = self.block * self.letter_scale(index) # bigger blocks under the lens
+            center_x = start_x + index * cell + 5 * self.block / 2
+            left = center_x - 5 * size / 2
+            top = center_y - 7 * size / 2
 
-            painter.save()
-            painter.translate(center_x, center_y) # move the origin to the letter's center
-            painter.scale(scale, scale) # zoom around that center
-            cell = QRectF(-self.letter_width / 2, -self.height() / 2, self.letter_width, self.height())
-            painter.drawText(cell, Qt.AlignCenter, letter)
-            painter.restore() # undo translate + scale for the next letter
+            for row in range(7):
+                for col in range(5):
+                    if rows[row][col] == "X":
+                        # Whole pixels only, with a 1 pixel gap between "LEDs"
+                        x = round(left + col * size)
+                        y = round(top + row * size)
+                        lit = max(1, round(size) -1)
+                        painter.fillRect(x, y, lit, lit, color)
 
-            x += self.letter_width
+        painter.end()
+        return image
 
+    def draw_layer(self, painter, image, shift):
+        # Draws one colored copy of the word, cut into glitch bands if a glitch is running
+        if len(self.slices) == 0:
+            painter.drawImage(shift, 0, image)
+            return
+
+        ratio = image.devicePixelRatio()
+        for y, band, offset in self.slices:
+            source = QRectF(0, y * ratio, image.width(), band * ratio)
+            target = QRectF(shift + offset, y, self.width(), band)
+            painter.drawImage(target, image, source)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        # 1. Dark LED panel with a faint grid of unlit dots
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.color_panel)
+        painter.drawRoundedRect(QRectF(self.rect()), 8, 8)
+        painter.setRenderHint(QPainter.Antialiasing, False)
+
+        y = 2
+        while y < self.height() - 2:
+            x = 4
+            while x < self.width() -4:
+                painter.fillRect(x, y, self.block - 1, self.block - 1, self.color_dots)
+                x += self.block
+            y += self.block
+
+        # 2. RGB split: red copy to the left, cyan copy to the right, white on top
+        glitching = len(self.slices) > 0
+        split = 1
+        if glitching:
+            split = 4
+
+        painter.setCompositionMode(QPainter.CompositionMode_Plus)
+        self.draw_layer(painter, self.render_word(self.color_red), -split)
+        self.draw_layer(painter, self.render_word(self.color_cyan), split)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+        self.draw_layer(painter, self.render_word(self.color_text), 0)
+
+        # 3. CRT scanline: a thin dark line every 3 pixels
+        scanline = QColor(0, 0, 0, 70)
+        y = 0
+        while y < self.height():
+            painter.fillRect(0, y, self.width(), 1, scanline)
+            y += 3
+        
         painter.end()
 
 class TopBar(QWidget):
