@@ -65,6 +65,10 @@ class NavisionTitle(QWidget):
         self.block = 5      # one font pixel = 5x5 screen pixels
         self.letter_gap = 2 # empty font pixels between letters
 
+        # Panel width
+        word_width = (7 + self.letter_gap) * self.block * len(self.word) - self.letter_gap * self.block
+        self.setFixedWidth(word_width + 50)
+
         # Magnifying glass
         self.max_zoom = 0.5   # the letter under the lens grows to 1.5x
         self.lens_speed = 3.0 # letters per second
@@ -103,7 +107,7 @@ class NavisionTitle(QWidget):
 
         # While glitching, cut the word into random horizontal bands every frame
         self.slices = []
-        
+
         if t < self.glitch_until:
             y = 0
             while y < self.height():
@@ -238,7 +242,9 @@ class TopBar(QWidget):
         self.btn_expand.setToolTip("Expand window")
 
         layout.addSpacing(40) # same width as btn_expand, keeps the title truly centered.
-        layout.addWidget(self.title, 1)
+        layout.addStretch()
+        layout.addWidget(self.title)
+        layout.addStretch()
         layout.addWidget(self.btn_expand)
 
 class SideBar(QWidget):
