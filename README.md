@@ -19,7 +19,7 @@ New layout, built-in Windows OCR instead of Tesseract (nothing extra to install)
  RemDupes | Removes duplicate values, one value per line
  OCR      | Reads text from a screenshot in the clipboard
  Clear    | Empties the text area
- Expand   | Slides with window open to show the calculator
+ Expand   | Slides the window open to show the calculator
 ```
 
 ## Calculator
@@ -28,7 +28,6 @@ New layout, built-in Windows OCR instead of Tesseract (nothing extra to install)
 - The display is read-only, so results can be selected and copied (Ctrl+C) but not edited by hand.
 
 ## OCR limitations
-
 OCR uses the text recognition built into Windows (Windows.Media.Ocr), in English and Dutch.
 
 Always double-check OCR results before using them in Navision.
