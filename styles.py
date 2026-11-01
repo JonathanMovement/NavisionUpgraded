@@ -7,8 +7,6 @@ PLATINUM_CORE = "#8d8f91"
 CRIMSON_VOID = "#680916"
 CARBON_CRIMSON = "#c93847"
 DEEP_VELVET = "#271729"
-DARK_NEBULA = "#1a0a1c"
-CONSOLE_BLUE = "#181b24"
 OBSIDIAN = "#161718"
 FROST_WHITE = "#e8e8ea"
 CRIMSON_GLOW = "#e04656" 
@@ -26,11 +24,6 @@ APP_STYLE = f"""
         #TopBar {{
             background-color: {OBSIDIAN};
             border-bottom: 1px solid {GRAPHITE_BLACK};
-            color: {FROST_WHITE};
-            border: 1px solid {ANVIL};
-            border-radius: 6px;
-            padding: 6px 4px;
-            font-family
         }}
         QPushButton {{
             background-color: {GRAPHITE_BLACK};
@@ -52,7 +45,7 @@ APP_STYLE = f"""
             padding: 10px;
         }}
         QPushButton[kind="operator"] {{
-            background-color": {DEEP_VELVET};
+            background-color: {GRAPHITE_BLACK};
             border-color: {VELVET_EDGE};
             color: {CARBON_CRIMSON};
             font-size: 22px;
@@ -72,11 +65,8 @@ APP_STYLE = f"""
             background-color: {CRIMSON_GLOW};
         }}
         QPushButton[kind="danger"]:hover {{
-            background-color: {CRIMSON_VOID};
-            border-color: #6b0f18;
-        }}
-        QPushButton[kind="danger"]:hover {{
             background-color: {NIGHT_INK};
+            border-color: #6b0f18;
         }}
         QPushButton:pressed {{
             background-color: {CARBON_CRIMSON};
@@ -119,12 +109,6 @@ APP_STYLE = f"""
             margin: 2px;
         }}
         QScrollBar::handle:vertical, QScrollBar::handle:horizontal {{
-            background: {ANVIL};
-            border-radius: 3px;
-            min-height: 30px;
-            min-width: 30px;
-        }}
-        QScrollBar::handle::vertical, QScrollBar::handle:horizontal {{
             background: {ANVIL};
             border-radius: 3px;
             min-height: 30px;

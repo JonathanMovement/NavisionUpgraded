@@ -1,5 +1,5 @@
 import os
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt, QVariantAnimation, QEasingCurve, QAbstractAnimation
 from PyQt5.QtGui import QIcon, QImage, QPainter
 from logic import resource_path, filter_1, filter_2, filter_3, remove_duplicates, ocr_image, ocr_max_image_size
@@ -51,7 +51,6 @@ class MainWindow(QMainWindow):
 
         # Expand / shrink animation
         self.expanded = False
-        self.base_width = self.width() # window width without the calculator
 
         self.expand_anim = QVariantAnimation(self)
         self.expand_anim.setDuration(300) # milliseconds
@@ -143,7 +142,7 @@ class MainWindow(QMainWindow):
                 image = image.scaled(image.width() * 2, image.height() * 2,
                                      Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-            # White margin around the picture
+            # White margin around the picture + raw pixels as R, G, B, A bytes
             bordered = QImage(image.width() + margin * 2, image.height() + margin * 2, QImage.Format_RGBA8888)
             bordered.fill(Qt.white)
             painter = QPainter(bordered)
@@ -151,8 +150,6 @@ class MainWindow(QMainWindow):
             painter.end()
             image = bordered
 
-            # Windows OCR wants raw pixels as R, G, B, A bytes
-            image = image.convertToFormat(QImage.Format_RGBA8888)
             data = image.bits().asstring(image.sizeInBytes())
 
             text = ocr_image(data, image.width(), image.height())

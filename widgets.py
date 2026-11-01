@@ -66,7 +66,6 @@ class NavisionTitle(QWidget):
         self.block = 5      # one font pixel = 5x5 screen pixels
         self.letter_gap = 2 # empty font pixels between letters
 
-        # Panel width
         word_width = (7 + self.letter_gap) * self.block * len(self.word) - self.letter_gap * self.block
         self.setFixedWidth(word_width + 50)
 

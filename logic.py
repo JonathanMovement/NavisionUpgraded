@@ -42,7 +42,7 @@ def remove_duplicates(text):
     return "\n".join(result) # one value per line
 
 # ----------- Screenshot -> Text (Windows OCR) ----------------
-OCR_LANGUAGES = ["nl", "en"] 
+OCR_LANGUAGES = ["en", "nl"] 
 
 def get_ocr_engine():
     # Importing here so the app starts without loading OCR
