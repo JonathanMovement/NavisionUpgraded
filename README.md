@@ -7,7 +7,7 @@ It's the modernized remake of The BETTER Navision:
 
 New layout, built-in Windows OCR instead of Tesseract (nothing extra to install), a calculator panel, undo for every action, and an animated pixel-style title.
 
-![app_animation](icons/app_animation.gif)
+![app_animation](app_animation.gif)
 
 ## Features
 ```
