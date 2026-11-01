@@ -292,9 +292,7 @@ class PlainTextEdit(QTextEdit):
 
     def initUI(self):
         self.setObjectName("TextArea")
-        self.setPlaceholderText("Paste your text here ^-^\nCTRL+Z -> Undo\nCTRL+Y -> Redo\n\n" \
-        "WinOCR limits:\nUnderscores and other symbols are not supported/read by WinOCR.\n" \
-        "It sometimes autocorrects letter 'l' to 1, always double check.")
+        self.setPlaceholderText("Paste your text here ^-^\nCTRL+Z -> Undo\nCTRL+Y -> Redo")
 
         text_font = QFont("Cascadia Code")
         text_font.setPixelSize(15)

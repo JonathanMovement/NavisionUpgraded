@@ -1,6 +1,6 @@
 import sys
 import os
-import asyncio
+import numpy as np
 
 def resource_path(relative_path): # Files are unpacked into sys._MEIPASS when running PyInstaller .exe
     if hasattr(sys, "_MEIPASS"):
@@ -41,47 +41,62 @@ def remove_duplicates(text):
 
     return "\n".join(result) # one value per line
 
-# ----------- Screenshot -> Text (Windows OCR) ----------------
-OCR_LANGUAGES = ["en", "nl"] 
+# ----------- Screenshot -> Text (RapidOCR) ----------------
+ocr_engine = None # created on the first OCR click, then reused
 
 def get_ocr_engine():
-    # Importing here so the app starts without loading OCR
-    from winrt.windows.media.ocr import OcrEngine
-
-    installed = OcrEngine.available_recognizer_languages
-
-    for wanted in OCR_LANGUAGES:
-        for language in installed:
-            if language.language_tag.lower().startswith(wanted):
-                return OcrEngine.try_create_from_language(language)
-
-    return None
+    global ocr_engine
+    if ocr_engine is None:
+        # Importing here so the app starts without loading the OCR models
+        from rapidocr import RapidOCR
+        ocr_engine = RapidOCR(params={"Global.log_level": "error"})
+    return ocr_engine
 
 def ocr_max_image_size():
-    from winrt.windows.media.ocr import OcrEngine
-    return OcrEngine.max_image_dimension
+    return 2000 # RapidOCR shrinks anything bigger than 2000px on its long side
 
-async def wait_for(operation):
-    # Windows OCR works asynchronously - this waits until the result is ready
-    return await operation
+def box_left(item):
+    return item["left"]
+
+def box_center_y(item):
+    return item["center_y"]
 
 def ocr_image(rgba_bytes, width, height):
-    from winrt.windows.graphics.imaging import SoftwareBitmap, BitmapPixelFormat
+    # Raw R, G, B, A bytes -> a height x width x 4 grid of numbers
+    pixels = np.frombuffer(rgba_bytes, dtype=np.uint8).reshape(height, width, 4)
+    # RapidOCR (OpenCV) wants B, G, R order and no alpha
+    bgr = np.ascontiguousarray(pixels[:, :, [2, 1, 0]])
 
-    engine = get_ocr_engine()
-    if engine is None:
-        raise RuntimeError(
-            "No English or Dutch OCR language is installed on this PC.\n\n"
-            "Ask IT to install one, or run this in PowerShell as administrator:\n"
-            'Add-WindowsCapability -Online -Name "Language.OCR~~~en-US~0.0.1.0"\n'
-            'Add-WindowsCapability -Online -Name "Language.OCR~~~nl-NL~0.0.1.0"'
-        )
+    result = get_ocr_engine()(bgr)
+    if result.txts is None:
+        return "" # nothing found
 
-    bitmap = SoftwareBitmap.create_copy_from_buffer(rgba_bytes, BitmapPixelFormat.RGBA8, width, height)
-    result = asyncio.run(wait_for(engine.recognize_async(bitmap)))
+    pieces = []
+    for box, text in zip(result.boxes, result.txts):
+        top = min(box[0][1], box[1][1], box[2][1], box[3][1])
+        bottom = max(box[0][1], box[1][1], box[2][1], box[3][1])
+        left = min(box[0][0], box[1][0], box[2][0], box[3][0])
+        pieces.append({"text": text, "top": top, "bottom": bottom,
+                       "left": left, "center_y": (top + bottom) / 2})
 
+    # Group pieces into lines
+    pieces.sort(key=box_center_y)
     lines = []
-    for line in result.lines:
-        lines.append(line.text)
+    for piece in pieces:
+        if len(lines) > 0:
+            current = lines[-1]
+            if current["top"] <= piece["center_y"] <= current["bottom"]:
+                current["pieces"].append(piece)
+                continue
+        lines.append({"top": piece["top"], "bottom": piece["bottom"], "pieces": [piece]})
 
-    return "\n".join(lines) # one OCR line per line
+    # Inside each line: left to right, joined with spaces
+    output = []
+    for line in lines:
+        line["pieces"].sort(key=box_left)
+        words = []
+        for piece in line["pieces"]:
+            words.append(piece["text"])
+        output.append(" ".join(words))
+
+    return "\n".join(output)

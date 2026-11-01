@@ -5,7 +5,8 @@ A small Windows desktop utility tool for Business Central and Microsoft Dynamics
 It's the modernized remake of The BETTER Navision:
 (https://github.com/JonathanMovement/Navision_UtilityTool) 
 
-New layout, built-in Windows OCR instead of Tesseract (nothing extra to install), a calculator panel, undo for every action, and an animated pixel-style title.
+> This is the **RapidOCR** version (branch `rapidocr`). The lighter version using Windows' built-in OCR
+> lives on the `main` branch.
 
 ![app_animation](app_animation.gif)
 
@@ -27,19 +28,29 @@ New layout, built-in Windows OCR instead of Tesseract (nothing extra to install)
 - Enter = =, Esc = clear, Backspace = delete last character, * or x = multiply.
 - The display is read-only, so results can be selected and copied (Ctrl+C) but not edited by hand.
 
-## OCR limitations
-OCR uses the text recognition built into Windows (Windows.Media.Ocr), in English and Dutch.
+## OCR 
+OCR uses [RapidOCR](https://github.com/RapidAI/RapidOCR) with its built-in models, so it works offline
+and needs no Windows language packs or admin rights.
 
-Always double-check OCR results before using them in Navision.
-Underscores and most other symbols are not read.
-1, l and I can be mixed up, especially in small fonts.
-Values can occasionally be skipped, for example short repeated-letter strings.
-The English OCR language must be installed in Windows. It comes with English Windows; installing it otherwise needs administrator rights.
+- **Always double-check OCR results before using them in Navision.**
+- `l` and `I` can still be mixed up in some fonts.
+- The first OCR after starting the app takes a second longer while the models load.
 
 ## Running from source
+**Required fix (PyQt5 + onnxruntime crash):** PyQt5 ships old copies of Microsoft's C++ runtime that make
+onnxruntime crash with an access violation on the first OCR. Move them out of the virtual environment once
+after installing:
+
 ```powershell
-python -m venv .venv
-.venv\Scripts\activate
+mkdir old_qt_runtime
+Move-Item .venv-rapid\Lib\site-packages\PyQt5\Qt5\bin\msvcp140*.dll old_qt_runtime\
+Move-Item .venv-rapid\Lib\site-packages\PyQt5\Qt5\bin\vcruntime140*.dll old_qt_runtime\
+```
+Repeat this whenever PyQt5 is reinstalled.
+
+```powershell
+python -m venv .venv-rapid
+.venv-rapid\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
@@ -47,11 +58,12 @@ python main.py
 The `icons` folder (button icons, logo) is not part of the repository because it contains company images. Without it the app still runs; buttons just show no icons and there is no background logo.
 
 ## Building the .exe
-Build from a clean virtual environment with only `requirements.txt` installed - the PyWinRT
-PyInstaller hook bundles every installed `winrt-*` package, so extra packages make the `.exe` bigger.
+Build from a clean virtual environment with only `requirements.txt` installed, and after the
+PyQt5 runtime fix above - otherwise the `.exe` crashes on the first OCR too.
 
 ```powershell
-pyinstaller --onefile --windowed --name NavisionUpgraded --icon icons\KTNlogo.ico --add-data "icons;icons" main.py
+pyinstaller --onefile --windowed --name NavisionUpgraded-RapidOCR --icon icons/KTNlogo.ico --add-data "icons;icons" --collect-data rapidocr --hidden-import rapidocr.main main.py
 ```
 
-The finished file is `dist\NavisionUpgraded.exe`. It needs no installation and no admin rights.
+The finished file is `dist\NavisionUpgraded-RapidOCR.exe`. It's much bigger than the Windows OCR version
+because it carries the OCR engine and models, and it starts a few seconds slower.

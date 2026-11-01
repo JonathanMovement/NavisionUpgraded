@@ -1,14 +1,9 @@
 # GUI
 PyQt5>=5.15,<5.16
- 
-# Windows OCR (Windows.Media.Ocr through PyWinRT) - needs Python 3.11 or newer
-winrt-runtime>=4,<5
-winrt-Windows.Foundation
-winrt-Windows.Foundation.Collections
-winrt-Windows.Globalization
-winrt-Windows.Graphics.Imaging
-winrt-Windows.Media.Ocr
-winrt-Windows.Storage.Streams
- 
+
+# RapidOCR
+rapidocr>=3.10,<4
+onnxruntime
+
 # Building the .exe
 pyinstaller>=6
