@@ -4,9 +4,7 @@ CARBON_SHELL = "#1f2021"
 DARK_MATTER = "#020203"
 ANVIL = "#4a4c4f"
 PLATINUM_CORE = "#8d8f91"
-CRIMSON_VOID = "#680916"
 CARBON_CRIMSON = "#c93847"
-DEEP_VELVET = "#271729"
 OBSIDIAN = "#161718"
 FROST_WHITE = "#e8e8ea"
 CRIMSON_GLOW = "#e04656" 
@@ -132,5 +130,21 @@ APP_STYLE = f"""
         }}
         QMessageBox QPushButton {{
             min-width: 70px;
+        }}
+        QMenu {{
+            background-color: {GRAPHITE_BLACK};
+            border: 1px solid {ANVIL};
+            padding: 4px;
+        }}
+        QMenu::item {{
+            padding: 6px 20px;
+        }}
+        QMenu::item:selected {{
+            background-color: {CARBON_CRIMSON};
+        }}
+        QMenu::separator {{
+            height: 1px;
+            background: {ANVIL};
+            margin: 4px 8px;
         }}
     """

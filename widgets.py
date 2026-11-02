@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit, 
-                             QLineEdit, QGridLayout, QLabel)
+                             QLineEdit, QGridLayout, QLabel, QMenu, QApplication)
 from PyQt5.QtCore import Qt, QRectF, QTimer, QSize, QEvent, QElapsedTimer
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QIcon, QTextCursor, QImage, QKeySequence
 from logic import resource_path
@@ -364,10 +364,19 @@ class Calculator(QWidget):
 
         self.text_box = QLineEdit()
         self.text_box.setObjectName("CalcDisplay")
-        self.text_box.setFont(QFont("Cascadia Code", 32))
+        self.text_box.setFont(QFont("Cascadia Code", 27))
 
         self.text_box.setReadOnly(True) # view and copy only - typing goes through the buttons
         self.text_box.installEventFilter(self) # let the Calculator see the display's key presses first
+
+        # Right-click menu: number format
+        self.text_box.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.text_box.customContextMenuRequested.connect(self.show_menu)
+
+        # Number format - European by default (13.750,5)
+        self.decimal_sep = ","
+        self.thousands_sep = "."
+        self.just_calculated = False
 
         self.operators = "+-x/"
         self.button_map = {} # button text -> button, so a key press can find its button
@@ -455,6 +464,10 @@ class Calculator(QWidget):
     def eventFilter(self, obj, event):
         # Every event for the display passes through here before the display gets it
         if obj == self.text_box and event.type() == QEvent.KeyPress:
+            if event.matches(QKeySequence.Paste): # CTRL + V
+                self.paste_number()
+                return True
+            
             key_text = self.key_to_button_text(event)
 
             if key_text in self.button_map:
@@ -499,6 +512,116 @@ class Calculator(QWidget):
 
         self.text_box.setFocus() # clicking the calculator sends typing to the calculator
 
+    # --- QLineEdit right click menu ---
+    def show_menu(self, position):
+        menu = QMenu(self)
+
+        comma_action = menu.addAction("13.750,5 - comma for decimals")
+        comma_action.setCheckable(True)
+        comma_action.setChecked(self.decimal_sep == ",")
+        comma_action.triggered.connect(self.comma_decimals)
+
+        dot_action = menu.addAction("13,750.5 - dot for decimals")
+        dot_action.setCheckable(True)
+        dot_action.setChecked(self.decimal_sep == ".")
+        dot_action.triggered.connect(self.dot_decimals)
+
+        menu.exec_(self.text_box.mapToGlobal(position))
+
+    def comma_decimals(self):
+        self.set_separators(",", ".")
+
+    def dot_decimals(self):
+        self.set_separators(".", ",")
+
+    def set_separators(self, decimal_sep, thousands_sep):
+        if decimal_sep == self.decimal_sep:
+            return # already in this format
+
+        self.decimal_sep = decimal_sep
+        self.thousands_sep = thousands_sep
+
+        # What's on display switches format too: 13.750,5 <-> 13,750.5
+        swapped = self.text_box.text().translate(str.maketrans(".,", ",."))
+        self.text_box.setText(swapped)
+        self.text_box.setCursorPosition(0)
+
+    def paste_number(self):
+        pasted = QApplication.clipboard().text()
+
+        token = "" # the number being collected right now
+        for char in pasted + " ": # the extra space makes sure the last number gets sent too
+            if char.isdigit() or char == "." or char == ",":
+                token += char
+                continue
+
+            if token != "":
+                self.press_number(self.normalize_number(token))
+                token = ""
+
+            if char in self.operators or char == "*" or char == "X":
+                self.press(self.operator_for(char))
+            # anything else (spaces, currency signs, letters) is skipped
+
+        self.text_box.setFocus()
+
+    def press_number(self, number):
+        for char in number:
+            self.press(char) # press(".") shows the decimal mark of the current mode
+
+    def normalize_number(self, token): # turns a pasted number into plain Python form: "13.750" -> "13750", "12,5" -> "12.5"
+        token = token.strip(".,")
+        dots = token.count(".")
+        commas = token.count(",")
+
+        if dots > 0 and commas > 0:
+            if token.rfind(",") > token.rfind("."):
+                return token.replace(".", "").replace(",", ".")
+            return token.replace(",", "")
+
+        if dots == 0 and commas == 0:
+            return token # plain whole number
+
+        sep = "."
+        if commas > 0:
+            sep = ","
+
+        if dots + commas > 1:
+            return token.replace(sep, "") 
+
+        whole, after = token.split(sep)
+        if len(after) == 3 and 1 <= len(whole) <= 3 and whole != "0":
+            return whole + after # 13.750 / 13,750 thirteen thousand seven hundred fifty
+
+        return whole + "." + after # 12,5 / 27.50 / 0,125 -> decimals
+
+    def operator_for(self, char):
+        if char == "*" or char == "X":
+            return "x"
+        return char
+
+    # --- Number helpers ---
+    def to_python(self, expression):
+        expression = expression.replace(self.thousands_sep, "")
+        expression = expression.replace(self.decimal_sep, ".")
+        return expression.replace("x", "*")
+
+    def format_number(self, value):
+        # 13750 -> 13.750  /  27.5 -> 27,5 (in comma mode)
+        if isinstance(value, float):
+            value = round(value, 10) # 0.3000000004 -> 0.3
+            if value.is_integer() and abs(value) < 1e15:
+                value = int(value) # 3.0 -> 3
+
+        if isinstance(value, int):
+            text = f"{value:,}" # 13,750
+        else:
+            text = f"{value:,.10f}".rstrip("0").rstrip(".") # 13,750.5
+
+        if self.decimal_sep == ",":
+            text = text.translate(str.maketrans(",.", ".,")) # 13,750.5 -> 13.750,5
+        return text
+
     def current_number(self, expression):
         # The number being typed right now = everything after the last operator
         number = ""
@@ -511,24 +634,21 @@ class Calculator(QWidget):
     def press(self, text):
         current_value = self.text_box.text()
 
-        # After and error, the next press starts fresh
+        # After an error, the next press starts fresh
         if current_value == "Error":
             current_value = ""
 
+        if self.just_calculated and text not in self.operators and text != "=":
+            if text != "<":
+                current_value = ""
+        self.just_calculated = False
+
         if text == "=":
-            symbol = current_value.replace("x", "*")
             try:
-                res = eval(symbol)
-
-                # Fixing 0.3000000004 -> 0.3 and 3.0 -> 3
-                if isinstance(res, float):
-                    res = round(res, 10)
-                    if res.is_integer() and abs(res) < 1e15:
-                        res = int(res)
-
-                current_value = str(res)
-            except Exception as e:
-                print("Error:", e)
+                res = eval(self.to_python(current_value))
+                current_value = self.format_number(res)
+                self.just_calculated = True
+            except Exception:
                 current_value = "Error"
 
         elif text == "Clear":
@@ -538,7 +658,7 @@ class Calculator(QWidget):
             current_value = current_value[:-1]
 
         elif text in self.operators:
-            # Fixing two operators in a row replacing each other, so (** = power)
+            # removing power (**)
             if current_value == "":
                 if text == "-":
                     current_value = "-" # a negative number can start with -
@@ -550,18 +670,21 @@ class Calculator(QWidget):
 
         elif text == ".":
             number = self.current_number(current_value)
-            if "." in number:
+            if self.decimal_sep in number:
                 pass # a number can only have one decimal point
             elif number == "":
-                current_value += "0." # "." on its own becomes "0."
+                current_value += "0" + self.decimal_sep # "," on its own becomes "0,"
             else:
-                current_value += "."
+                current_value += self.decimal_sep
 
         else: # a digit
-            # Fixing 05 -> 5
+            # 05 -> 5
             if self.current_number(current_value) == "0":
                 current_value = current_value[:-1] + text
             else:
                 current_value += text
 
         self.text_box.setText(current_value)
+
+        if self.just_calculated:
+            self.text_box.setCursorPosition(0) # show the start of a long result, not the end
